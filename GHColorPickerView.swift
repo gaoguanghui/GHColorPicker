@@ -12,7 +12,10 @@ public class GHColorPickerView: UIView {
     
     public var selectedColorCallback: ((_ color: UIColor) -> Void)?
     public var selectedColor: UIColor = .white
-
+    
+    public var indicatorRadius: CGFloat = 23
+    public var isShowShadow: Bool = true
+    
     /// 色盘
     private var colorWheelView: UIView?
     /// 选色指示器
@@ -32,6 +35,8 @@ public class GHColorPickerView: UIView {
         return 2//Int(UIScreen.main.scale)
     }
     
+    private let defaultShadowColor = UIColor.lightGray.cgColor
+    
     override public init(frame: CGRect) {
         super.init(frame: frame)
     }
@@ -43,6 +48,12 @@ public class GHColorPickerView: UIView {
         super.layoutSubviews()
         if colorWheelView == nil {
             colorWheelView = UIView()
+            if isShowShadow {
+                colorWheelView?.layer.shadowColor = defaultShadowColor
+                colorWheelView?.layer.shadowOffset = .zero
+                colorWheelView?.layer.shadowOpacity = 0.7
+                colorWheelView?.layer.shadowRadius = 20
+            }
             addSubview(colorWheelView!)
             colorWheelView!.frame = CGRect(x: (bounds.width-dimension)/2, y: (bounds.height-dimension)/2, width: dimension, height: dimension)
             
@@ -67,7 +78,7 @@ public class GHColorPickerView: UIView {
             colorWheelView!.layer.addSublayer(circleLayer)
             
             /// 色盘添加选中颜色指示图
-            let size = CGSize(width: 46, height: 46)
+            let size = CGSize(width: indicatorRadius*2, height: indicatorRadius*2)
             indicatorView = UIView()
             indicatorView?.layer.cornerRadius = size.width/2
             indicatorView?.layer.borderColor = UIColor.white.cgColor
@@ -93,6 +104,11 @@ public class GHColorPickerView: UIView {
         indicatorView?.backgroundColor = color
         let point = locatedPointWithRGB()
         indicatorView?.center = point
+        var red: CGFloat = 1, green: CGFloat = 1, blue: CGFloat = 1, alpha: CGFloat = 1
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        let rgb = RGB(red, green, blue, alpha)
+        let hsb = rgb_to_hsb(rgb)
+        colorWheelView?.layer.shadowColor = hsb.saturation < 0.2 ? defaultShadowColor : color.cgColor
     }
     
     /// 根据给定的RGB值计算相应的CGPoint
@@ -217,6 +233,7 @@ public class GHColorPickerView: UIView {
         colorWheelValueWithPosition(position, &hue, &saturation)
         selectedColor = UIColor(hue: hue, saturation: saturation, brightness: 1.0, alpha: 1)
         indicatorView?.backgroundColor = selectedColor
+        colorWheelView?.layer.shadowColor = saturation < 0.2 ? defaultShadowColor : selectedColor.cgColor
     }
     
     /// 判断当前选择的点是否在色盘之内
@@ -250,9 +267,30 @@ public class GHColorPickerView: UIView {
         return false
     }
     
+    /// shadow闪烁
+    public func startShadowFlash() {
+        if isShowShadow {
+            let animation = CABasicAnimation(keyPath: "shadowOpacity")
+            animation.repeatCount = MAXFLOAT
+            animation.duration = 0.4
+            animation.fromValue = 0.4
+            animation.toValue = 0.8
+            animation.autoreverses = true
+            animation.isRemovedOnCompletion = false
+            animation.fillMode = .forwards
+            animation.timingFunction = CAMediaTimingFunction(name: CAMediaTimingFunctionName.easeInEaseOut)
+            colorWheelView?.layer.add(animation, forKey: animation.keyPath)
+        }
+    }
+    
+    /// 停止闪烁
+    public func stopShadowFlash() {
+        colorWheelView?.layer.removeAllAnimations()
+    }
+    
     deinit {
         indicatorView?.layer.removeAllAnimations()
-//        print("=========== deinit: \(self.classForCoder)")
+        //        print("=========== deinit: \(self.classForCoder)")
     }
 }
 
