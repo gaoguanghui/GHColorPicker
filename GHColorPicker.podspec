@@ -9,7 +9,7 @@
 Pod::Spec.new do |spec|
 
   spec.name         = "GHColorPicker"
-  spec.version      = "0.0.1"
+  spec.version      = "0.0.2"
   spec.summary      = "A color picker."
   spec.homepage     = "https://github.com/gaoguanghui/GHColorPicker"
 
